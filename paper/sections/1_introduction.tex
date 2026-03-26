@@ -1,0 +1,18 @@
+\section{Introduction}
+
+Central cooling plants and multi-chiller systems remain among the most electricity-intensive assets in large commercial, industrial, and mission-critical facilities. Their operation is further complicated by heterogeneous chiller efficiencies, auxiliary pumping and heat-rejection loads, time-varying tariffs, and demand uncertainty. In practice, many sites still rely on rule-based sequencing or incremental controller tuning, which often leaves non-trivial system-level savings unrealized.
+
+Recent work has shown that calibrated simulation models and advanced control can substantially improve plant efficiency. Model-based global optimization can extract savings from existing control architectures without major retrofits \citep{niu2023global}, and Modelica-based studies have clarified how sequencing and parameter tuning interact in multi-chiller systems \citep{bai2024modelica}. In parallel, control-oriented studies in data-center cooling demonstrate the value of predictive coordination between chillers and storage \citep{zhu2023storage,zhao2024mpc}. However, these streams of work often emphasize one of three axes at a time: high-fidelity simulation, closed-loop predictive control, or robust scheduling under limited plant scope.
+
+This paper focuses on a narrower but practically motivated problem: \emph{day-ahead scheduling of a heterogeneous multi-chiller plant under uncertainty}. Rather than proposing a full model predictive control stack, we develop a reproducible Pyomo-based mixed-integer linear programming (MILP) framework that captures unit commitment, auxiliary-equipment coupling, storage operation, and budgeted robustness in a single optimization layer. The intended use case is benchmark-oriented planning and what-if analysis before moving toward plant-specific validation or online supervisory control.
+
+Our main contributions are:
+\begin{enumerate}[leftmargin=1.5em]
+    \item We formulate a full-plant day-ahead scheduling MILP for chillers, chilled-water pumps, condenser-water pumps, cooling-tower auxiliaries, and chilled-water storage using explicit mixed-integer unit-commitment decisions and piecewise-linear performance models.
+    \item We incorporate a compact robust counterpart for cooling-load and tariff uncertainty based on budgeted uncertainty, allowing the model to remain MILP-solvable in Pyomo while improving out-of-sample adequacy.
+    \item We provide a semi-synthetic benchmark and an experiment pipeline that compare rule-based, deterministic, and robust scheduling, together with ablations on uncertainty budget, storage capacity, equipment heterogeneity, and auxiliary-equipment modeling.
+\end{enumerate}
+
+The empirical results show a clear and interpretable tradeoff. The deterministic MILP with storage is the cheapest nominally, but it is brittle under sampled disturbances. The robust MILP with storage incurs a moderate cost premium while sharply reducing out-of-sample shortage, and storage partially recovers the robustness cost relative to a robust no-storage formulation. We therefore present the framework as a reproducible benchmark methodology rather than as a fully validated operational controller.
+
+The remainder of the paper is organized as follows. Section~\ref{sec:related} positions the work in the broader literature. Section~\ref{sec:method} presents the plant model and robust MILP formulation. Section~\ref{sec:experiments} describes the benchmark case and discusses comparative results. Section~\ref{sec:conclusion} concludes with limitations and next steps.

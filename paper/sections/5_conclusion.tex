@@ -1,0 +1,10 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper presented a reproducible Pyomo-based robust MILP framework for day-ahead scheduling of a heterogeneous multi-chiller plant with thermal storage and auxiliary equipment. The formulation combines unit commitment, piecewise-linear chiller performance, storage dynamics, and budgeted robustness for both cooling load and electricity price uncertainty.
+
+On the semi-synthetic 24-hour benchmark, the deterministic MILP with storage achieved the lowest nominal cost but was highly vulnerable to out-of-sample disturbances. The robust formulations dramatically reduced expected shortage, and storage partially recovered the associated cost premium. These findings support the use of robust planning-oriented scheduling as a benchmark methodology for full-plant cooling optimization.
+
+The current study has three main limitations. First, the experiments are based on semi-synthetic demand and tariff profiles rather than measured plant data. Second, the auxiliary-equipment models are intentionally compact and may omit nonlinear hydraulic or thermodynamic effects. Third, the work addresses day-ahead scheduling only and does not yet include rolling-horizon feedback or zone-level thermal dynamics.
+
+Future work should therefore proceed along two complementary directions: field-calibrated validation on a measured chiller plant, and tighter integration between robust day-ahead scheduling and real-time supervisory control. Even in its current form, however, the proposed framework provides a transparent and extensible baseline for robust full-plant cooling optimization studies.

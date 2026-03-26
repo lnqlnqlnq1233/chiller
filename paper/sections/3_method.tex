@@ -1,0 +1,84 @@
+\section{System Model and Robust MILP Formulation}
+\label{sec:method}
+
+\subsection{Plant Scope}
+
+We consider a centralized cooling plant with a finite scheduling horizon $\tset = \{1,\dots,24\}$, a chiller set $\cset$, a chilled-water storage tank, chilled-water pumps, condenser-water pumps, and cooling-tower auxiliaries. The benchmark case contains three large chillers and one small chiller with heterogeneous capacities, minimum part-load ratios, startup costs, and piecewise-linear efficiency segments.
+
+At each hour $t \in \tset$, the optimization decides whether each chiller is on, whether it starts up, its cooling output, storage charging and discharging power, and the normalized operating levels of auxiliary equipment. The model is intentionally day-ahead rather than receding-horizon: all hourly decisions are optimized jointly using nominal forecasts and bounded uncertainty sets. To keep the benchmark compact and MILP-solvable, we do not include minimum up/down time, ramp-rate, or detailed hydraulic state constraints in the base formulation. This is a deliberate scope choice rather than a claim that such constraints are unimportant.
+
+\subsection{Chiller Commitment and Piecewise-Linear Cooling Production}
+
+For each chiller $c \in \cset$, let $u_{c,t} \in \{0,1\}$ denote the on/off state, $v_{c,t} \in \{0,1\}$ the startup variable, and $q_{c,t}$ the delivered cooling power. We enforce
+\begin{equation}
+q_{c,t} = q_{c}^{\min} u_{c,t} + \sum_{s \in \{1,2,3\}} q^{\mathrm{seg}}_{c,t,s},
+\end{equation}
+where $q_{c}^{\min}$ is the minimum output implied by the part-load constraint and $q^{\mathrm{seg}}_{c,t,s}$ is the extra cooling assigned to segment $s$. Each segment is bounded by a pre-specified width,
+\begin{equation}
+0 \le q^{\mathrm{seg}}_{c,t,s} \le \bar{q}^{\mathrm{seg}}_{c,s} u_{c,t},
+\end{equation}
+which keeps the formulation linear while preserving capacity-dependent performance.
+
+The electrical power draw of each chiller is modeled as
+\begin{equation}
+p^{\mathrm{ch}}_{c,t} = p^{\mathrm{fix}}_{c} u_{c,t} + \sum_{s} \alpha_{c,t,s} q^{\mathrm{seg}}_{c,t,s},
+\end{equation}
+where $p^{\mathrm{fix}}_{c}$ is the fixed parasitic load and $\alpha_{c,t,s}$ is a segment-dependent inverse COP slope. In the implementation, $\alpha_{c,t,s}$ is adjusted by wet-bulb temperature through a simple multiplicative sensitivity term, so the benchmark retains environmental coupling without introducing nonlinearities.
+
+Startup logic is encoded through the standard commitment inequalities
+\begin{equation}
+v_{c,t} \ge u_{c,t} - u_{c,t-1},
+\end{equation}
+with the first hour initialized from an all-off state.
+
+\subsection{Storage and Auxiliary Equipment}
+
+Let $x^{\mathrm{ch}}_t$, $x^{\mathrm{dis}}_t$, and $\SOC_t$ denote storage charging power, discharging power, and state of charge. The storage state evolves as
+\begin{equation}
+\SOC_t = \SOC_{t-1} + \eta^{\mathrm{ch}} x^{\mathrm{ch}}_t - \frac{x^{\mathrm{dis}}_t}{\eta^{\mathrm{dis}}},
+\end{equation}
+subject to power limits, energy capacity, and a cyclic end condition $\SOC_{24} = \SOC_0$. Charge and discharge modes are made mutually exclusive with binary indicators.
+
+The total cooling supplied to the load is
+\begin{equation}
+q^{\mathrm{sup}}_t = \sum_{c \in \cset} q_{c,t} + x^{\mathrm{dis}}_t - x^{\mathrm{ch}}_t.
+\end{equation}
+Auxiliary-equipment power is modeled by normalized operating levels for chilled-water flow, condenser-water flow, and cooling-tower activity. These levels are lower bounded by affine functions of the aggregate chiller load and the number of active chillers. The benchmark therefore captures an important engineering fact: optimizing chillers alone can materially understate plant electricity use.
+
+\subsection{Budgeted Robust Cooling Adequacy}
+
+The uncertain cooling load is decomposed into components $l \in \lset$ with nominal values $\hat{d}_{l,t}$ and deviations $\tilde{d}_{l,t} \ge 0$. The nominal aggregate load is $\hat{D}_t = \sum_l \hat{d}_{l,t}$. To protect against simultaneous adverse deviations without assuming that every component reaches its worst case at every hour, we use a budgeted uncertainty set. Its linear robust counterpart is implemented as
+\begin{equation}
+q^{\mathrm{sup}}_t + y_t \ge \hat{D}_t + \GammaL \eta_t + \sum_{l \in \lset} \rho_{l,t},
+\end{equation}
+subject to
+\begin{equation}
+\rho_{l,t} \ge \tilde{d}_{l,t} - \eta_t, \qquad \rho_{l,t} \ge 0, \qquad \eta_t \ge 0,
+\end{equation}
+where $y_t$ is an unmet-cooling slack variable penalized heavily in the objective. This is a standard Bertsimas-Sim-style reformulation: $\GammaL$ controls how many deviations are allowed to be simultaneously active in an adversarial sense.
+
+\subsection{Robust Electricity Cost}
+
+Let $\hat{\pi}_t$ denote the nominal tariff and $\tilde{\pi}_t$ the tariff deviation bound. If $p^{\mathrm{grid}}_t$ is the plant grid power, the nominal energy cost is $\sum_t \hat{\pi}_t p^{\mathrm{grid}}_t$. We augment it with another budgeted robust term,
+\begin{equation}
+\GammaP \theta + \sum_t \psi_t,
+\end{equation}
+subject to
+\begin{equation}
+\psi_t \ge \tilde{\pi}_t p^{\mathrm{grid}}_t - \theta, \qquad \psi_t \ge 0, \qquad \theta \ge 0.
+\end{equation}
+This choice keeps the objective linear and interpretable: the model pays for nominal energy use plus a tunable risk premium for tariff uncertainty.
+
+\subsection{Objective Function}
+
+The final MILP minimizes
+\begin{equation}
+\min \sum_t \hat{\pi}_t p^{\mathrm{grid}}_t
++ \sum_{c,t} c^{\mathrm{start}}_c v_{c,t}
++ c^{\mathrm{stor}} \sum_t \left( x^{\mathrm{ch}}_t + x^{\mathrm{dis}}_t \right)
++ c^{\mathrm{miss}} \sum_t y_t
++ \GammaP \theta + \sum_t \psi_t,
+\end{equation}
+where the terms correspond to nominal electricity cost, chiller startup cost, storage throughput cost, unmet-cooling penalty, and robust tariff premium.
+
+The model is implemented in Pyomo and solved with a generic MILP backend. Because the decision space is discrete but compact, the same formulation can support controlled ablations on robustness budget, storage sizing, auxiliary-equipment inclusion, and equipment heterogeneity without changing the underlying solver workflow. In the benchmark code, the unmet-cooling penalty is set to 100 per kWh, the default uncertainty budgets are $\GammaL=1.4$ and $\GammaP=5.0$, the initial storage state is 450~kWh, and out-of-sample evaluation uses 24 sampled disturbance realizations. The default solver backend is HiGHS, although the implementation is backend-agnostic across common MILP solvers.

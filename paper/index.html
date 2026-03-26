@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Robust Day-Ahead Scheduling of a Heterogeneous Multi-Chiller Plant</title>
+  <style>
+    :root {
+      --bg: #f5f1e8;
+      --paper: #fffdf9;
+      --ink: #1f2430;
+      --muted: #5f6673;
+      --line: #d9d0c0;
+      --accent: #0f5c78;
+      --accent-soft: #dbeef5;
+      --accent-warm: #b55d34;
+      --shadow: 0 18px 50px rgba(44, 40, 32, 0.08);
+      --maxw: 1140px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(15, 92, 120, 0.08), transparent 34%),
+        radial-gradient(circle at top right, rgba(181, 93, 52, 0.08), transparent 26%),
+        linear-gradient(180deg, #f8f5ee 0%, var(--bg) 100%);
+      line-height: 1.72;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: var(--maxw); margin: 0 auto; padding: 28px 22px 48px; }
+    .hero {
+      background: linear-gradient(140deg, rgba(15, 92, 120, 0.96), rgba(18, 39, 51, 0.92));
+      color: #f8fbfc;
+      border-radius: 28px;
+      padding: 34px 36px 30px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -70px;
+      top: -60px;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.22), rgba(255,255,255,0));
+    }
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 16px;
+      padding: 6px 10px;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 999px;
+    }
+    h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0 0 14px; }
+    h1 { font-size: clamp(2rem, 4vw, 3.25rem); max-width: 930px; letter-spacing: -0.02em; }
+    .hero p { max-width: 860px; margin: 0; color: rgba(248, 251, 252, 0.88); font-size: 1.05rem; }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 28px;
+    }
+    .meta-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 18px;
+      padding: 14px 16px;
+      backdrop-filter: blur(4px);
+    }
+    .meta-card .label {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.72;
+      margin-bottom: 6px;
+    }
+    .meta-card strong { font-size: 1rem; font-weight: 600; }
+    .layout {
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr);
+      gap: 24px;
+      margin-top: 26px;
+      align-items: start;
+    }
+    .toc {
+      position: sticky;
+      top: 18px;
+      background: rgba(255, 253, 249, 0.84);
+      border: 1px solid rgba(217, 208, 192, 0.92);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .toc h2 { font-size: 1rem; margin-bottom: 12px; }
+    .toc ol { padding-left: 18px; margin: 0; }
+    .toc li { margin: 7px 0; color: var(--muted); }
+    .paper {
+      background: var(--paper);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 28px 34px 40px;
+      border: 1px solid rgba(217, 208, 192, 0.85);
+    }
+    .abstract {
+      background: linear-gradient(180deg, #fbfaf6, #f4eee0);
+      border: 1px solid #e3d8c4;
+      border-radius: 24px;
+      padding: 22px 24px;
+      margin-bottom: 24px;
+    }
+    .abstract h2 {
+      font-size: 1.05rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent-warm);
+      margin-bottom: 12px;
+    }
+    section { margin: 34px 0 0; scroll-margin-top: 20px; }
+    section > h2 {
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+      font-size: 1.55rem;
+      margin-bottom: 18px;
+    }
+    h3 { font-size: 1.08rem; color: var(--accent); margin-top: 22px; }
+    p { margin: 0 0 14px; text-align: justify; text-justify: inter-word; }
+    .contrib {
+      background: var(--accent-soft);
+      border-left: 4px solid var(--accent);
+      padding: 16px 18px 16px 20px;
+      border-radius: 0 18px 18px 0;
+      margin: 18px 0;
+    }
+    ol, ul { margin: 0 0 14px 20px; padding: 0; }
+    li { margin: 8px 0; }
+    .equation {
+      margin: 16px auto;
+      padding: 14px 16px;
+      background: #f8f7f3;
+      border: 1px solid #e4ddd0;
+      border-radius: 16px;
+      font-family: "Cambria Math", "Times New Roman", serif;
+      overflow-x: auto;
+      color: #222831;
+    }
+    .eq-note { display: block; color: var(--muted); font-size: 0.92rem; margin-top: 8px; }
+    figure {
+      margin: 22px 0;
+      padding: 14px;
+      background: #fcfbf8;
+      border: 1px solid #e7dece;
+      border-radius: 20px;
+    }
+    figure img {
+      display: block;
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid #ddd2bf;
+      background: #fff;
+    }
+    figcaption { margin-top: 10px; color: var(--muted); font-size: 0.95rem; }
+    .table-wrap {
+      overflow-x: auto;
+      margin: 18px 0;
+      border: 1px solid #e3d8c4;
+      border-radius: 18px;
+      background: #fffdfa;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 680px; }
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #efe5d5;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f4ecde; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 14px 0 22px;
+    }
+    .kpi {
+      padding: 16px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #fffaf1, #f7efdf);
+      border: 1px solid #eadcc8;
+    }
+    .kpi .label {
+      font-size: 11px;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+    .kpi .value { font-size: 1.4rem; font-weight: 600; color: var(--accent-warm); }
+    .citation { color: var(--muted); white-space: nowrap; }
+    .references { columns: 2 320px; column-gap: 28px; }
+    .references li { break-inside: avoid; margin-bottom: 12px; }
+    .footer-note {
+      margin-top: 30px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    @media (max-width: 980px) {
+      .meta-grid, .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .paper { padding: 22px 18px 30px; }
+    }
+    @media (max-width: 640px) {
+      .page { padding: 16px 12px 28px; }
+      .hero, .paper { border-radius: 22px; }
+      .meta-grid, .kpi-strip { grid-template-columns: 1fr; }
+      h1 { font-size: 1.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <span class="eyebrow">HTML Paper Version</span>
+      <h1>Robust Day-Ahead Scheduling of a Heterogeneous Multi-Chiller Plant with Thermal Storage Using a Reproducible Pyomo-MILP Framework</h1>
+      <p>
+        A proof-of-concept benchmark study for uncertainty-aware full-plant cooling scheduling,
+        converted from the current LaTeX draft into a readable single-page HTML format.
+      </p>
+      <div class="meta-grid">
+        <div class="meta-card"><span class="label">Scope</span><strong>Day-ahead robust scheduling</strong></div>
+        <div class="meta-card"><span class="label">Plant Boundary</span><strong>Chillers, pumps, tower, storage</strong></div>
+        <div class="meta-card"><span class="label">Method</span><strong>Pyomo + MILP + budgeted robustness</strong></div>
+        <div class="meta-card"><span class="label">Evidence</span><strong>Semi-synthetic 24 h benchmark</strong></div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="toc">
+        <h2>Contents</h2>
+        <ol>
+          <li><a href="#abstract">Abstract</a></li>
+          <li><a href="#introduction">Introduction</a></li>
+          <li><a href="#related-work">Related Work</a></li>
+          <li><a href="#method">System Model and Robust MILP Formulation</a></li>
+          <li><a href="#experiments">Experiments</a></li>
+          <li><a href="#conclusion">Conclusion</a></li>
+          <li><a href="#appendix">Appendix</a></li>
+          <li><a href="#references">References</a></li>
+        </ol>
+      </aside>
+
+      <main class="paper">
+        <section id="abstract" class="abstract">
+          <h2>Abstract</h2>
+          <p>
+            Central chiller plants remain a major source of electricity consumption in continuously operated cooling systems,
+            yet much of the recent literature emphasizes simulation-based tuning, model predictive control, or facility-specific
+            digital twins. This paper develops a reproducible day-ahead mixed-integer linear programming framework for the robust
+            scheduling of a heterogeneous multi-chiller plant with chilled-water storage, chilled-water pumps, condenser-water pumps,
+            and cooling-tower auxiliaries. The formulation is implemented in Pyomo and combines explicit unit commitment,
+            piecewise-linear chiller efficiency curves, storage dynamics, and a Bertsimas-Sim-style budgeted robust treatment of
+            cooling-load and tariff uncertainty. We evaluate the framework on a semi-synthetic 24-hour benchmark plant with three
+            large chillers, one small chiller, and time-of-use electricity pricing. Relative to the lowest-cost deterministic
+            schedule with storage, the robust formulation with storage increases total operating cost from 5584.7 to 6002.1 while
+            reducing the out-of-sample mean cooling shortfall from 740.3 kWh to 66.5 kWh and the correlated-stress mean shortfall
+            from 528.0 kWh to 23.0 kWh. Compared with a robust formulation without storage, thermal storage further lowers total
+            cost from 6128.2 to 6002.1 without degrading the shortage metric. Additional ablations show that increasing the
+            uncertainty budget systematically trades operating cost for resilience and that larger storage capacity improves
+            economic performance. We frame the study as a reproducible proof-of-concept benchmark rather than a field-validated
+            deployment study.
+          </p>
+        </section>
+
+        <div class="kpi-strip">
+          <div class="kpi"><div class="label">Deterministic With Storage</div><div class="value">5584.7</div></div>
+          <div class="kpi"><div class="label">Robust With Storage</div><div class="value">6002.1</div></div>
+          <div class="kpi"><div class="label">OOS Shortfall Drop</div><div class="value">740.3 to 66.5</div></div>
+          <div class="kpi"><div class="label">Correlated Stress Drop</div><div class="value">528.0 to 23.0</div></div>
+        </div>
+
+        <section id="introduction">
+          <h2>1. Introduction</h2>
+          <p>
+            Central cooling plants and multi-chiller systems remain among the most electricity-intensive assets in large commercial,
+            industrial, and mission-critical facilities. Their operation is further complicated by heterogeneous chiller efficiencies,
+            auxiliary pumping and heat-rejection loads, time-varying tariffs, and demand uncertainty. In practice, many sites still
+            rely on rule-based sequencing or incremental controller tuning, which often leaves non-trivial system-level savings unrealized.
+          </p>
+          <p>
+            Recent work has shown that calibrated simulation models and advanced control can substantially improve plant efficiency.
+            Model-based global optimization can extract savings from existing control architectures without major retrofits
+            <span class="citation">[Niu et al., 2023]</span>, and Modelica-based studies have clarified how sequencing and parameter
+            tuning interact in multi-chiller systems <span class="citation">[Bai et al., 2024]</span>. In parallel, control-oriented
+            studies in data-center cooling demonstrate the value of predictive coordination between chillers and storage
+            <span class="citation">[Zhu et al., 2023; Zhao et al., 2024]</span>. However, these streams of work often emphasize one
+            of three axes at a time: high-fidelity simulation, closed-loop predictive control, or robust scheduling under limited plant scope.
+          </p>
+          <p>
+            This paper focuses on a narrower but practically motivated problem: <em>day-ahead scheduling of a heterogeneous
+            multi-chiller plant under uncertainty</em>. Rather than proposing a full model predictive control stack, we develop a
+            reproducible Pyomo-based mixed-integer linear programming (MILP) framework that captures unit commitment,
+            auxiliary-equipment coupling, storage operation, and budgeted robustness in a single optimization layer. The intended use
+            case is benchmark-oriented planning and what-if analysis before moving toward plant-specific validation or online supervisory control.
+          </p>
+          <div class="contrib">
+            <strong>Main contributions.</strong>
+            <ol>
+              <li>A full-plant day-ahead scheduling MILP for chillers, chilled-water pumps, condenser-water pumps, cooling-tower auxiliaries, and chilled-water storage using explicit mixed-integer unit commitment and piecewise-linear performance models.</li>
+              <li>A compact robust counterpart for cooling-load and tariff uncertainty based on budgeted uncertainty, allowing the model to remain MILP-solvable in Pyomo while improving out-of-sample adequacy.</li>
+              <li>A semi-synthetic benchmark and experiment pipeline that compare rule-based, deterministic, and robust scheduling, together with ablations on uncertainty budget, storage capacity, equipment heterogeneity, and auxiliary-equipment modeling.</li>
+            </ol>
+          </div>
+          <p>
+            The empirical results show a clear and interpretable tradeoff. The deterministic MILP with storage is the cheapest nominally,
+            but it is brittle under sampled disturbances. The robust MILP with storage incurs a moderate cost premium while sharply
+            reducing out-of-sample shortage, and storage partially recovers the robustness cost relative to a robust no-storage
+            formulation. We therefore present the framework as a reproducible benchmark methodology rather than as a fully validated operational controller.
+          </p>
+        </section>
+
+        <section id="related-work">
+          <h2>2. Related Work</h2>
+          <h3>Global optimization and sequencing of chiller plants</h3>
+          <p>
+            Plant-level optimization for chiller systems has long targeted equipment sequencing, setpoint selection, and economic dispatch.
+            Niu et al. showed that even under existing factory operating constraints, a model-based global optimization workflow can
+            achieve substantial savings without interfering with production. Bai et al. further highlighted the interaction among
+            sequencing, load allocation, and parameter optimization in heterogeneous multi-chiller plants. These studies provide strong
+            evidence that system-level coordination matters, but they are primarily driven by simulation-centric optimization loops and
+            do not directly emphasize an open, compact MILP implementation for robust day-ahead scheduling.
+          </p>
+          <h3>Modelica-based calibration and digital twins</h3>
+          <p>
+            Equation-based and object-oriented modeling frameworks have become important for diagnosing performance degradation and
+            evaluating candidate operating policies. Fu et al. demonstrated how a calibrated Modelica model can identify hidden
+            inefficiencies and quantify energy-saving opportunities in data-center cooling systems. Such models are valuable because
+            they support high-fidelity representation and plant-specific interpretation. At the same time, the resulting optimization
+            workflow can be tightly coupled to a particular simulator and calibration effort, which may limit reproducibility when the
+            research goal is methodological scheduling rather than a site-specific digital twin.
+          </p>
+          <h3>Predictive control and storage-coupled cooling</h3>
+          <p>
+            Another major line of work develops model predictive control (MPC) or learning-enhanced closed-loop control for cooling systems.
+            In data-center applications, Zhu et al. proposed an MPC framework for chillers coupled with cold-water storage and reported
+            meaningful annual cost and PUE benefits. Zhao et al. considered whole-system energy conservation in multi-chiller
+            data-center control by combining predictive models with particle swarm optimization. These approaches are compelling for
+            online operation, but they usually require forecasting stacks, rolling re-optimization, and tighter integration between
+            plant dynamics and the controller. Our work instead targets the planning layer and asks how much value can be obtained from
+            a simpler but still system-aware robust scheduling formulation.
+          </p>
+          <h3>Robust and stochastic chiller scheduling</h3>
+          <p>
+            Uncertainty-aware formulations recognize that cooling demand and tariff conditions are imperfectly known in advance.
+            Saeedi et al. and Sadat-Mohammadi et al. showed that robust optimization can reduce sensitivity to uncertain demand and
+            pricing in multi-chiller settings, including systems with chilled-water storage. These papers are closest in spirit to our
+            study. The gap we address is the combination of three ingredients in a single reproducible research scaffold: heterogeneous
+            chiller commitment, explicit auxiliary-equipment coupling, and a benchmark-oriented Pyomo implementation that can be
+            extended toward journal-quality ablation and visualization workflows.
+          </p>
+          <p>
+            Overall, the existing literature supports the importance of system-level optimization, but it still leaves room for
+            transparent and extensible scheduling frameworks that sit between heuristic operation and simulator-heavy predictive control.
+            This paper is intended to fill that gap for the day-ahead planning problem.
+          </p>
+        </section>
+
+        <section id="method">
+          <h2>3. System Model and Robust MILP Formulation</h2>
+          <h3>Plant scope</h3>
+          <p>
+            We consider a centralized cooling plant with a finite scheduling horizon T = {1, ..., 24}, a chiller set C, a
+            chilled-water storage tank, chilled-water pumps, condenser-water pumps, and cooling-tower auxiliaries. The benchmark case
+            contains three large chillers and one small chiller with heterogeneous capacities, minimum part-load ratios, startup costs,
+            and piecewise-linear efficiency segments.
+          </p>
+          <p>
+            At each hour, the optimization decides whether each chiller is on, whether it starts up, its cooling output, storage
+            charging and discharging power, and the normalized operating levels of auxiliary equipment. The model is intentionally
+            day-ahead rather than receding-horizon: all hourly decisions are optimized jointly using nominal forecasts and bounded
+            uncertainty sets. To keep the benchmark compact and MILP-solvable, the base formulation does not include minimum
+            up/down time, ramp-rate, or detailed hydraulic state constraints.
+          </p>
+          <h3>Chiller commitment and piecewise-linear cooling production</h3>
+          <p>
+            For each chiller c, let u(c,t) denote the on/off state, v(c,t) the startup variable, and q(c,t) the delivered cooling power.
+            The delivered cooling is decomposed into a minimum output term plus segment-wise incremental production:
+          </p>
+          <div class="equation">
+            q(c,t) = q<sup>min</sup><sub>c</sub> u(c,t) + Σ<sub>s∈{1,2,3}</sub> q<sup>seg</sup>(c,t,s)
+            <span class="eq-note">Each segment is bounded by its width and activated only when the chiller is committed.</span>
+          </div>
+          <p>
+            The electrical power draw of each chiller is modeled as fixed parasitic power plus segment-dependent inverse-COP slopes.
+            In the implementation, these slopes are adjusted by wet-bulb temperature through a simple multiplicative sensitivity term,
+            so the benchmark retains environmental coupling without introducing nonlinearities.
+          </p>
+          <div class="equation">
+            p<sup>ch</sup>(c,t) = p<sup>fix</sup><sub>c</sub> u(c,t) + Σ<sub>s</sub> α(c,t,s) q<sup>seg</sup>(c,t,s)
+          </div>
+          <p>
+            Startup logic is encoded through the standard commitment inequality v(c,t) ≥ u(c,t) - u(c,t-1), with the first hour initialized from an all-off state.
+          </p>
+          <h3>Storage and auxiliary equipment</h3>
+          <p>
+            Let x<sup>ch</sup>(t), x<sup>dis</sup>(t), and SOC(t) denote storage charging power, discharging power, and state of charge.
+            The storage state evolves according to charging and discharging efficiencies, subject to power limits, energy capacity,
+            and a cyclic end condition.
+          </p>
+          <div class="equation">
+            SOC(t) = SOC(t-1) + η<sup>ch</sup> x<sup>ch</sup>(t) - x<sup>dis</sup>(t) / η<sup>dis</sup>
+          </div>
+          <p>
+            The total cooling supplied to the load is the sum of chiller output and storage discharge minus storage charge:
+          </p>
+          <div class="equation">
+            q<sup>sup</sup>(t) = Σ<sub>c∈C</sub> q(c,t) + x<sup>dis</sup>(t) - x<sup>ch</sup>(t)
+          </div>
+          <p>
+            Auxiliary-equipment power is modeled by normalized operating levels for chilled-water flow, condenser-water flow, and
+            cooling-tower activity. These levels are lower bounded by affine functions of aggregate chiller load and the number of
+            active chillers, so the benchmark captures the practical fact that optimizing chillers alone can materially understate plant electricity use.
+          </p>
+          <h3>Budgeted robust cooling adequacy</h3>
+          <p>
+            The uncertain cooling load is decomposed into components l with nominal values d-hat(l,t) and deviations d-tilde(l,t).
+            To protect against simultaneous adverse deviations without assuming that every component reaches its worst case at every hour,
+            we use a budgeted uncertainty set. Its linear robust counterpart is:
+          </p>
+          <div class="equation">
+            q<sup>sup</sup>(t) + y(t) ≥ D-hat(t) + Γ<sup>load</sup> η(t) + Σ<sub>l</sub> ρ(l,t)
+            <span class="eq-note">with ρ(l,t) ≥ d-tilde(l,t) - η(t), ρ(l,t) ≥ 0, and η(t) ≥ 0.</span>
+          </div>
+          <p>
+            Here y(t) is an unmet-cooling slack variable penalized heavily in the objective. This is a Bertsimas-Sim-style reformulation:
+            Γ<sup>load</sup> controls how many deviations are allowed to be simultaneously active in an adversarial sense.
+          </p>
+          <h3>Robust electricity cost and objective</h3>
+          <p>
+            Let π-hat(t) denote the nominal tariff and π-tilde(t) its deviation bound. If p<sup>grid</sup>(t) is the plant grid power,
+            the nominal energy cost is Σ π-hat(t) p<sup>grid</sup>(t). We augment it with another budgeted robust term:
+          </p>
+          <div class="equation">
+            Γ<sup>price</sup> θ + Σ ψ(t), with ψ(t) ≥ π-tilde(t) p<sup>grid</sup>(t) - θ
+          </div>
+          <p>
+            The final MILP minimizes nominal energy cost, startup cost, storage throughput cost, unmet-cooling penalty, and the robust
+            tariff premium. In the benchmark code, the unmet-cooling penalty is set to 100 per kWh, the default uncertainty budgets
+            are Γ<sup>load</sup> = 1.4 and Γ<sup>price</sup> = 5.0, the initial storage state is 450 kWh, and out-of-sample evaluation
+            uses 24 sampled disturbance realizations. The default solver backend is HiGHS.
+          </p>
+        </section>
+
+        <section id="experiments">
+          <h2>4. Experiments</h2>
+          <h3>Benchmark setup</h3>
+          <p>
+            The benchmark plant contains three large chillers and one small chiller, a single chilled-water storage tank, normalized
+            chilled-water and condenser-water pumping loads, and cooling-tower auxiliary power. The scheduling horizon is 24 hours with
+            hourly resolution. The cooling load is constructed semi-synthetically from three components: a base internal load,
+            an ambient-sensitive component, and a process-variation component. Electricity tariffs follow a time-of-use structure with higher prices during afternoon and evening hours.
+          </p>
+          <p>We compare five benchmark methods:</p>
+          <ol>
+            <li><strong>Rule-based</strong>: a heuristic merit-order sequencing policy with simple tariff-triggered storage charging and discharging.</li>
+            <li><strong>Deterministic MILP without storage</strong>: nominal day-ahead optimization with auxiliary-equipment modeling but no robustness terms and no storage use.</li>
+            <li><strong>Deterministic MILP with storage</strong>: nominal day-ahead optimization that isolates the value of storage without robustness.</li>
+            <li><strong>Robust MILP without storage</strong>: robust day-ahead optimization with uncertainty budgets for load and tariff but without storage.</li>
+            <li><strong>Robust MILP with storage</strong>: the full proposed formulation.</li>
+          </ol>
+          <p>
+            Robustness is evaluated with out-of-sample perturbations that sample each load component and tariff within its bounded
+            uncertainty interval. We report mean cooling shortfall, upper-tail shortfall statistics, realized energy cost, and a
+            correlated-stress setting in which the ambient-sensitive component receives a common adverse disturbance across the day.
+          </p>
+
+          <h3>Main comparative results</h3>
+          <p>
+            The deterministic MILPs deliver the lowest nominal operating cost, with the storage-enabled deterministic schedule achieving
+            the best nominal objective at 5584.7. However, both deterministic schedules perform poorly under uncertainty, with an
+            out-of-sample mean shortfall of 740.3 kWh. By contrast, the robust formulations sharply reduce this shortage to 66.5 kWh.
+            Storage then recovers part of the cost premium: the robust-with-storage model lowers total cost from 6128.2 to 6002.1
+            relative to robust-no-storage while preserving the same shortage metric.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Total Cost</th>
+                  <th>Peak Power</th>
+                  <th>Avg. COP</th>
+                  <th>OOS Shortage</th>
+                  <th>Energy Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Rule-based</td><td>7230.2</td><td>422.1</td><td>2.655</td><td>355.7</td><td>7116.9</td></tr>
+                <tr><td>Deterministic no storage</td><td>5706.4</td><td>320.4</td><td>3.296</td><td>737.4</td><td>5628.4</td></tr>
+                <tr><td>Deterministic with storage</td><td>5584.7</td><td>341.9</td><td>3.279</td><td>740.3</td><td>5488.6</td></tr>
+                <tr><td>Robust no storage</td><td>6128.2</td><td>335.9</td><td>3.290</td><td>66.5</td><td>5852.9</td></tr>
+                <tr><td>Robust with storage</td><td>6002.1</td><td>343.8</td><td>3.277</td><td>66.5</td><td>5725.4</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <figure>
+            <img src="figures/dispatch_comparison.png" alt="Dispatch comparison across benchmark methods">
+            <figcaption>Figure 1. Dispatch comparison across benchmark methods. Stacked areas show chiller cooling contributions, while the overlaid load and storage traces highlight day-ahead load shifting.</figcaption>
+          </figure>
+
+          <p>
+            The cost-robustness tradeoff is explicit. Moving from the deterministic MILP to the robust MILP requires a modest increase
+            in total cost, but it substantially improves out-of-sample cooling adequacy. This behavior is desirable for operators that face penalties or service risks from under-delivered cooling.
+          </p>
+
+          <figure>
+            <img src="figures/cost_robustness_tradeoff.png" alt="Cost robustness tradeoff">
+            <figcaption>Figure 2. Total-cost versus out-of-sample-shortage tradeoff for the benchmark methods.</figcaption>
+          </figure>
+
+          <h3>Storage and auxiliary-equipment interpretation</h3>
+          <p>
+            The robust-with-storage solution does not minimize peak grid power in this benchmark, because it opportunistically charges
+            during lower-price hours to protect future adequacy. The value of storage here is therefore not merely peak shaving; it
+            also acts as a flexibility buffer that lowers total cost under robust planning constraints.
+          </p>
+
+          <figure>
+            <img src="figures/grid_soc_comparison.png" alt="Grid power and storage state comparison">
+            <figcaption>Figure 3. Grid power and storage-state comparison. Storage changes when cooling is produced rather than simply reducing the instantaneous peak at all times.</figcaption>
+          </figure>
+
+          <p>
+            The cost decomposition further clarifies the mechanism. Relative to the rule-based baseline, optimization reduces nominal
+            energy cost substantially. Relative to deterministic scheduling, robust scheduling introduces a tariff-risk premium and more
+            conservative dispatch decisions, but these are partially offset by storage-enabled temporal shifting. The robustness benefit
+            is not limited to the mean: the deterministic schedules have a 95th-percentile shortfall of about 802.2 kWh, whereas the
+            robust schedules reduce that value to 98.2 kWh. Under the correlated-stress evaluation, the mean shortage drops from
+            528.0 kWh for deterministic-with-storage to 23.0 kWh for robust-with-storage.
+          </p>
+
+          <figure>
+            <img src="figures/cost_breakdown.png" alt="Benchmark cost breakdown">
+            <figcaption>Figure 4. Benchmark cost breakdown by method.</figcaption>
+          </figure>
+
+          <h3>Ablation studies</h3>
+          <p>
+            Increasing the robustness budget Γ<sup>load</sup> from 0.0 to 2.2 raises total cost from 5584.7 to 6092.8, but it drives
+            the out-of-sample mean shortage down from 737.4 kWh to 2.8 kWh. This monotonic trend indicates that the uncertainty-budget
+            parameter is interpretable and operationally tunable.
+          </p>
+
+          <figure>
+            <img src="figures/gamma_sensitivity.png" alt="Sensitivity to uncertainty budget">
+            <figcaption>Figure 5. Sensitivity to the load uncertainty budget. Larger budgets increase cost but significantly reduce out-of-sample shortage.</figcaption>
+          </figure>
+
+          <p>
+            Storage sizing yields a different pattern. Increasing storage capacity from 450 kWh to 1400 kWh reduces total cost from
+            6062.0 to 5955.2, while slightly lowering the equivalent cycling ratio. This suggests that larger storage improves dispatch
+            flexibility before cycling saturation becomes a dominant constraint.
+          </p>
+
+          <figure>
+            <img src="figures/storage_sensitivity.png" alt="Storage capacity sensitivity">
+            <figcaption>Figure 6. Storage-capacity sensitivity. Larger storage improves total cost in the current benchmark.</figcaption>
+          </figure>
+
+          <p>
+            Two additional ablations are also informative. First, forcing identical chiller efficiency assumptions degrades average COP
+            and increases total cost, indicating that equipment heterogeneity is not a cosmetic modeling detail. Second, removing pump
+            and tower power terms makes the plant appear artificially efficient. This confirms that a meaningful plant-level scheduling
+            benchmark should include auxiliary electricity use even in a simplified MILP. For completeness, the optimization runs
+            quickly in this benchmark: solve times are around 0.09 to 0.13 seconds on the current machine, consistent with the model
+            being intended for planning-oriented use.
+          </p>
+
+          <h3>Discussion</h3>
+          <p>
+            The results support three conclusions. First, deterministic plant scheduling can be misleadingly optimistic when the control
+            objective includes reliable cooling adequacy under uncertainty. Second, storage has planning value beyond straightforward
+            arbitrage because it gives the robust scheduler another degree of freedom for adequacy preservation. Third, a compact robust
+            MILP can already produce interpretable tradeoffs and broad ablations in a fully reproducible workflow, even before
+            field-calibrated dynamics are introduced.
+          </p>
+          <p>
+            At the same time, this study is intentionally limited. The benchmark is semi-synthetic rather than calibrated to field data,
+            the uncertainty set is interval-based rather than distributionally robust, and the model uses affine auxiliary-equipment
+            surrogates instead of detailed hydraulics. The comparison set also does not yet include a scenario-based stochastic scheduler,
+            so the current evidence should be interpreted as a benchmark study rather than a definitive ranking across all
+            uncertainty-aware methods.
+          </p>
+        </section>
+
+        <section id="conclusion">
+          <h2>5. Conclusion</h2>
+          <p>
+            This paper presented a reproducible Pyomo-based robust MILP framework for day-ahead scheduling of a heterogeneous multi-chiller
+            plant with thermal storage and auxiliary equipment. The formulation combines unit commitment, piecewise-linear chiller
+            performance, storage dynamics, and budgeted robustness for both cooling load and electricity price uncertainty.
+          </p>
+          <p>
+            On the semi-synthetic 24-hour benchmark, the deterministic MILP with storage achieved the lowest nominal cost but was highly
+            vulnerable to out-of-sample disturbances. The robust formulations dramatically reduced expected shortage, and storage
+            partially recovered the associated cost premium. These findings support the use of robust planning-oriented scheduling as a
+            benchmark methodology for full-plant cooling optimization.
+          </p>
+          <p>
+            The current study has three main limitations. First, the experiments are based on semi-synthetic demand and tariff profiles
+            rather than measured plant data. Second, the auxiliary-equipment models are intentionally compact and may omit nonlinear
+            hydraulic or thermodynamic effects. Third, the work addresses day-ahead scheduling only and does not yet include
+            rolling-horizon feedback or zone-level thermal dynamics.
+          </p>
+          <p>
+            Future work should therefore proceed along two complementary directions: field-calibrated validation on a measured chiller
+            plant, and tighter integration between robust day-ahead scheduling and real-time supervisory control. Even in its current
+            form, however, the proposed framework provides a transparent and extensible baseline for robust full-plant cooling
+            optimization studies.
+          </p>
+        </section>
+
+        <section id="appendix">
+          <h2>Appendix</h2>
+          <h3>Benchmark plant parameters</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Item</th><th>Value</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Chiller capacities</td><td>460, 450, 390, 190 kW</td></tr>
+                <tr><td>Minimum part-load ratios</td><td>0.35, 0.35, 0.40, 0.30</td></tr>
+                <tr><td>Startup costs</td><td>28, 28, 22, 11</td></tr>
+                <tr><td>Fixed parasitic powers</td><td>24, 24, 20, 8 kW</td></tr>
+                <tr><td>Segment widths</td><td>{90,110,99}, {85,110,97.5}, {72,96,66}, {36,46,51} kW</td></tr>
+                <tr><td>Base segment COPs</td><td>{6.35,6.10,5.55}, {6.25,6.05,5.50}, {5.90,5.70,5.20}, {5.75,5.55,5.15}</td></tr>
+                <tr><td>Storage capacity</td><td>900 kWh</td></tr>
+                <tr><td>Storage charge/discharge limit</td><td>260 kW</td></tr>
+                <tr><td>Storage efficiencies</td><td>0.95 / 0.95</td></tr>
+                <tr><td>Initial SOC</td><td>450 kWh</td></tr>
+                <tr><td>Load robustness budget</td><td>1.4</td></tr>
+                <tr><td>Price robustness budget</td><td>5.0</td></tr>
+                <tr><td>Unmet-cooling penalty</td><td>100 per kWh</td></tr>
+                <tr><td>OOS sample count</td><td>24</td></tr>
+                <tr><td>Default solver</td><td>HiGHS</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Implementation notes</h3>
+          <p>
+            The optimization is implemented in Pyomo and currently solved with a generic MILP backend. The codebase includes a
+            semi-synthetic benchmark generator, deterministic and robust MILP model builders, a rule-based baseline, experiment scripts
+            for benchmark and ablation studies, and automated export of CSV summaries and figure galleries.
+          </p>
+          <p>
+            The benchmark outputs used in this draft were produced from the same repository and are therefore directly reproducible from
+            the accompanying experiment scripts.
+          </p>
+
+          <h3>Omitted operational constraints</h3>
+          <p>
+            The current benchmark does not impose minimum up/down times, ramp-rate limits, or detailed hydraulic state equations.
+            These omissions were intentional to keep the first formulation compact and to isolate the effect of uncertainty-aware
+            scheduling. In a plant-specific deployment study, these constraints should be reinstated and calibrated to equipment specifications.
+          </p>
+
+          <h3>Extended visual diagnostics</h3>
+          <p>
+            In addition to the main-paper figures, the repository exports commitment heatmaps, per-method cooling-balance plots,
+            power-tariff overlays, and storage trajectories for all ablation cases. These diagnostics are useful when inspecting how
+            robustness budgets alter the timing of commitment and the utilization of flexibility resources.
+          </p>
+
+          <figure>
+            <img src="figures/commitment_heatmap.png" alt="Commitment heatmap">
+            <figcaption>Supplementary diagnostic. Chiller commitment heatmap across the benchmark methods.</figcaption>
+          </figure>
+        </section>
+
+        <section id="references">
+          <h2>References</h2>
+          <ol class="references">
+            <li>Bai, X., Tang, Q., Luo, J., Mao, Y., Liang, C., and Zhang, X. Optimizing energy efficiency in multi-chiller systems: A comprehensive Modelica-based approach. <em>Journal of Building Engineering</em>, 95:110087, 2024.</li>
+            <li>Fu, Y., Zuo, W., Wetter, M., VanGilder, J. W., Han, X., and Plamondon, D. Equation-based object-oriented modeling and simulation for data center cooling: A case study. <em>Energy and Buildings</em>, 186:108-125, 2019.</li>
+            <li>Niu, J., Zhou, R., Tian, Z., Zhu, J., Lu, Y., and Ma, J. Energy-saving potential analysis for a 24-hour operating chiller plant using the model-based global optimization method. <em>Journal of Building Engineering</em>, 69:106213, 2023.</li>
+            <li>Sadat-Mohammadi, M., Asadi, S., Habibnezhad, M., et al. Robust scheduling of multi-chiller system with chilled-water storage under hourly electricity pricing. <em>Energy and Buildings</em>, 2020.</li>
+            <li>Saeedi, M., Moradi, M., Hosseini, M., Emamifar, A., et al. Robust optimization based optimal chiller loading under cooling demand uncertainty. <em>Applied Thermal Engineering</em>, 2019.</li>
+            <li>Zhao, J., Chen, Z., Li, H., and Liu, D. A model predictive control for a multi-chiller system in data center considering whole system energy conservation. <em>Energy and Buildings</em>, 324:114919, 2024.</li>
+            <li>Zhu, Y., Zhang, Q., Zeng, L., Wang, J., Zou, S., and Zheng, H. An advanced control strategy for optimizing the operation state of chillers with cold storage technology in data center. <em>Energy and Buildings</em>, 301:113684, 2023.</li>
+          </ol>
+        </section>
+
+        <p class="footer-note">
+          Source files for the paper draft remain in the same directory as this HTML version. This page is intended as a readable,
+          shareable companion to the LaTeX manuscript, not as a replacement for the final journal template.
+        </p>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
