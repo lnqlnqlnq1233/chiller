@@ -16,6 +16,7 @@ class ChillerConfig:
     segment_cooling_kw: list[float]
     base_segment_cop: list[float]
     wetbulb_sensitivity: float
+    capacity_wetbulb_derate: float
 
 
 @dataclass(slots=True)

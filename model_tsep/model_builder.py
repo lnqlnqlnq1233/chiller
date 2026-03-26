@@ -11,6 +11,7 @@ from .schemas import CaseConfig, ScenarioSet
 class ModelOptions:
     robust_load: bool = True
     robust_price: bool = True
+    robust_wetbulb: bool = False
     storage_enabled: bool = True
     pump_tower_enabled: bool = True
     identical_chillers: bool = False
@@ -23,6 +24,11 @@ def _segment_power_slope(chiller, wetbulb_c: float, identical_chillers: bool) ->
     else:
         cop_vector = chiller.base_segment_cop
     return [penalty_multiplier / cop for cop in cop_vector]
+
+
+def _available_capacity(chiller, wetbulb_c: float) -> float:
+    derate = chiller.capacity_wetbulb_derate * max(0.0, wetbulb_c - 23.0)
+    return max(chiller.max_cooling_kw * 0.7, chiller.max_cooling_kw * (1.0 - derate))
 
 
 def build_model(case: CaseConfig, options: ModelOptions, scenario: ScenarioSet | None = None) -> pyo.ConcreteModel:
@@ -49,6 +55,8 @@ def build_model(case: CaseConfig, options: ModelOptions, scenario: ScenarioSet |
     model.nominal_load = pyo.Param(model.T, initialize={t: scenario.total_nominal_load[t] for t in hours})
     model.tariff = pyo.Param(model.T, initialize={t: scenario.tariff_nominal[t] for t in hours})
     model.tariff_dev = pyo.Param(model.T, initialize={t: scenario.tariff_deviation[t] for t in hours})
+    model.wetbulb_nominal = pyo.Param(model.T, initialize={t: scenario.wetbulb_nominal_c[t] for t in hours})
+    model.wetbulb_dev = pyo.Param(model.T, initialize={t: scenario.wetbulb_deviation_c[t] for t in hours})
 
     model.load_dev_component = pyo.Param(
         model.L,
@@ -57,6 +65,21 @@ def build_model(case: CaseConfig, options: ModelOptions, scenario: ScenarioSet |
     )
 
     model.chiller_max = pyo.Param(model.C, initialize={name: chiller_map[name].max_cooling_kw for name in chiller_names})
+    model.chiller_available_max = pyo.Param(
+        model.C,
+        model.T,
+        initialize={
+            (
+                name,
+                t,
+            ): _available_capacity(
+                chiller_map[name],
+                scenario.wetbulb_nominal_c[t] + (scenario.wetbulb_deviation_c[t] if options.robust_wetbulb else 0.0),
+            )
+            for name in chiller_names
+            for t in hours
+        },
+    )
     model.chiller_min = pyo.Param(
         model.C,
         initialize={name: chiller_map[name].max_cooling_kw * chiller_map[name].min_plr for name in chiller_names},
@@ -77,7 +100,15 @@ def build_model(case: CaseConfig, options: ModelOptions, scenario: ScenarioSet |
         model.S,
         model.T,
         initialize={
-            (name, segment_names[s_idx], t): _segment_power_slope(chiller_map[name], scenario.wetbulb_nominal_c[t], options.identical_chillers)[s_idx]
+            (
+                name,
+                segment_names[s_idx],
+                t,
+            ): _segment_power_slope(
+                chiller_map[name],
+                scenario.wetbulb_nominal_c[t] + (scenario.wetbulb_deviation_c[t] if options.robust_wetbulb else 0.0),
+                options.identical_chillers,
+            )[s_idx]
             for name in chiller_names
             for s_idx in range(3)
             for t in hours
@@ -145,7 +176,7 @@ def build_model(case: CaseConfig, options: ModelOptions, scenario: ScenarioSet |
     model.extra_segment_limit = pyo.Constraint(model.C, model.T, model.S, rule=extra_segment_limit_rule)
 
     def max_output_rule(m, c, t):
-        return m.q_total[c, t] <= m.chiller_max[c] * m.on[c, t]
+        return m.q_total[c, t] <= m.chiller_available_max[c, t] * m.on[c, t]
 
     model.max_output = pyo.Constraint(model.C, model.T, rule=max_output_rule)
 
@@ -215,7 +246,8 @@ def build_model(case: CaseConfig, options: ModelOptions, scenario: ScenarioSet |
 
     def tower_level_rule(m, t):
         if options.pump_tower_enabled:
-            wetbulb_term = max(0.0, scenario.wetbulb_nominal_c[t] - aux.tower_reference_wetbulb_c) / 10.0
+            effective_wetbulb = scenario.wetbulb_nominal_c[t] + (scenario.wetbulb_deviation_c[t] if options.robust_wetbulb else 0.0)
+            wetbulb_term = max(0.0, effective_wetbulb - aux.tower_reference_wetbulb_c) / 10.0
             return m.tower_level[t] >= m.tower_load_coeff * (m.total_cooling_from_chillers[t] / m.total_installed_cooling_kw) + m.tower_wb_coeff * wetbulb_term
         return m.tower_level[t] == 0.0
 

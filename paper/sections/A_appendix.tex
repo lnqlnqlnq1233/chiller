@@ -18,12 +18,15 @@ Startup costs & 28, 28, 22, 11 \\
 Fixed parasitic powers & 24, 24, 20, 8~kW \\
 Segment widths & \{90,110,99\}, \{85,110,97.5\}, \{72,96,66\}, \{36,46,51\}~kW \\
 Base segment COPs & \{6.35,6.10,5.55\}, \{6.25,6.05,5.50\}, \{5.90,5.70,5.20\}, \{5.75,5.55,5.15\} \\
+Wet-bulb efficiency sensitivities & 0.015, 0.015, 0.017, 0.018 \\
+Wet-bulb capacity derating coefficients & 0.010, 0.010, 0.012, 0.013 \\
 Storage capacity & 900~kWh \\
 Storage charge/discharge limit & 260~kW \\
 Storage efficiencies & 0.95 / 0.95 \\
 Initial SOC & 450~kWh \\
 Load robustness budget $\GammaL$ & 1.4 \\
 Price robustness budget $\GammaP$ & 5.0 \\
+Wet-bulb deviation range & 0.8--1.0$^\circ$C by hour \\
 Unmet-cooling penalty & 100 per kWh \\
 OOS sample count & 24 \\
 Default solver & HiGHS \\
@@ -36,7 +39,7 @@ Default solver & HiGHS \\
 The optimization is implemented in Pyomo and currently solved with a generic MILP backend. The codebase includes:
 \begin{itemize}[leftmargin=1.5em]
     \item a semi-synthetic benchmark generator,
-    \item deterministic and robust MILP model builders,
+    \item deterministic, partially robust, and ambient-aware robust MILP model builders,
     \item a rule-based baseline,
     \item experiment scripts for benchmark and ablation studies, and
     \item automated export of CSV summaries and figure galleries.
@@ -46,8 +49,8 @@ The benchmark outputs used in this draft were produced from the same repository 
 
 \subsection{Omitted Operational Constraints}
 
-The current benchmark does not impose minimum up/down times, ramp-rate limits, or detailed hydraulic state equations. These omissions were intentional to keep the first formulation compact and to isolate the effect of uncertainty-aware scheduling. In a plant-specific deployment study, these constraints should be reinstated and calibrated to equipment specifications.
+The current benchmark does not impose minimum up/down times, ramp-rate limits, or detailed hydraulic state equations. The ambient-aware extension also uses compact conservative derating surrogates rather than a full heat-rejection model. These omissions were intentional to keep the first formulation compact and to isolate the effect of uncertainty-aware scheduling. In a plant-specific deployment study, these constraints should be reinstated and calibrated to equipment specifications.
 
 \subsection{Extended Visual Diagnostics}
 
-In addition to the main-paper figures, the repository exports commitment heatmaps, per-method cooling-balance plots, power-tariff overlays, and storage trajectories for all ablation cases. These diagnostics are useful when inspecting how robustness budgets alter the timing of commitment and the utilization of flexibility resources.
+In addition to the main-paper figures, the repository exports commitment heatmaps, per-method cooling-balance plots, power-tariff overlays, storage trajectories, and weather-robustness ablation charts. These diagnostics are useful when inspecting how uncertainty budgets alter commitment timing and how ambient-aware robustness changes the use of storage and chiller headroom.

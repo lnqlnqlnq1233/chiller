@@ -62,6 +62,7 @@ def create_benchmark_case() -> CaseConfig:
             segment_cooling_kw=[90.0, 110.0, 99.0],
             base_segment_cop=[6.35, 6.1, 5.55],
             wetbulb_sensitivity=0.015,
+            capacity_wetbulb_derate=0.010,
         ),
         ChillerConfig(
             name="CH2",
@@ -72,6 +73,7 @@ def create_benchmark_case() -> CaseConfig:
             segment_cooling_kw=[85.0, 110.0, 97.5],
             base_segment_cop=[6.25, 6.05, 5.5],
             wetbulb_sensitivity=0.015,
+            capacity_wetbulb_derate=0.010,
         ),
         ChillerConfig(
             name="CH3",
@@ -82,6 +84,7 @@ def create_benchmark_case() -> CaseConfig:
             segment_cooling_kw=[72.0, 96.0, 66.0],
             base_segment_cop=[5.9, 5.7, 5.2],
             wetbulb_sensitivity=0.017,
+            capacity_wetbulb_derate=0.012,
         ),
         ChillerConfig(
             name="CH4_small",
@@ -92,6 +95,7 @@ def create_benchmark_case() -> CaseConfig:
             segment_cooling_kw=[36.0, 46.0, 51.0],
             base_segment_cop=[5.75, 5.55, 5.15],
             wetbulb_sensitivity=0.018,
+            capacity_wetbulb_derate=0.013,
         ),
     ]
 

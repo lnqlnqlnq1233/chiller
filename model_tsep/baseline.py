@@ -96,6 +96,7 @@ def run_rule_based_baseline(case: CaseConfig) -> ResultBundle:
         }
         for name, value in chiller_dispatch.items():
             row[f"{name}_cooling_kw"] = value
+            row[f"{name}_on"] = 1 if value > 1e-6 else 0
         records.append(row)
 
     dispatch = pd.DataFrame(records)
@@ -116,5 +117,16 @@ def run_rule_based_baseline(case: CaseConfig) -> ResultBundle:
             "total_unserved_kwh": dispatch["unserved_kw"].sum(),
             "peak_grid_power_kw": dispatch["grid_power_kw"].max(),
             "avg_cop": dispatch["cooling_supply_kw"].sum() / total_power if total_power > 0 else 0.0,
+        },
+        metadata={
+            "solver_name": "heuristic",
+            "robust_load": False,
+            "robust_price": False,
+            "robust_wetbulb": False,
+            "storage_enabled": True,
+            "pump_tower_enabled": True,
+            "identical_chillers": False,
+            "load_gamma": 0.0,
+            "price_gamma": 0.0,
         },
     )

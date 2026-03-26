@@ -5,20 +5,23 @@
 
 The benchmark plant contains three large chillers and one small chiller, a single chilled-water storage tank, normalized chilled-water and condenser-water pumping loads, and cooling-tower auxiliary power. The scheduling horizon is 24 hours with hourly resolution. The cooling load is constructed semi-synthetically from three components: a base internal load, an ambient-sensitive component, and a process-variation component. Electricity tariffs follow a time-of-use structure with higher prices during afternoon and evening hours.
 
-We compare five benchmark methods:
+We compare six benchmark methods:
 \begin{enumerate}[leftmargin=1.5em]
     \item \textbf{Rule-based}: a heuristic merit-order sequencing policy with simple tariff-triggered storage charging and discharging.
     \item \textbf{Deterministic MILP without storage}: nominal day-ahead optimization with auxiliary-equipment modeling but no robustness terms and no storage use.
     \item \textbf{Deterministic MILP with storage}: nominal day-ahead optimization that isolates the value of storage without robustness.
-    \item \textbf{Robust MILP without storage}: robust day-ahead optimization with uncertainty budgets for load and tariff but without storage.
-    \item \textbf{Robust MILP with storage}: the full proposed formulation.
+    \item \textbf{Robust MILP without storage}: load-and-price-robust scheduling without storage.
+    \item \textbf{Robust MILP with storage}: load-and-price-robust scheduling with storage but nominal ambient coefficients.
+    \item \textbf{Ambient-aware robust MILP with storage}: the full proposed formulation, which additionally protects against wet-bulb-driven efficiency degradation and available-capacity derating.
 \end{enumerate}
 
-To evaluate robustness, we additionally generate out-of-sample perturbations by sampling each load component and tariff within its bounded uncertainty interval. We report the resulting mean cooling shortfall, upper-tail shortfall statistics, and realized energy cost under the fixed day-ahead schedule. We also evaluate a correlated-stress setting in which the ambient-sensitive component receives a common adverse disturbance across the day.
+To evaluate robustness, we generate out-of-sample perturbations by sampling each load component, tariff, and wet-bulb trajectory within its bounded uncertainty interval. Two evaluation modes are used. The first is an independent-sampling mode. The second is a correlated-stress mode in which the ambient-sensitive load component and wet-bulb deviation share a common adverse weather driver. During out-of-sample evaluation, realized chiller power and available cooling are recalculated under the perturbed wet-bulb temperature rather than being frozen at their nominal values.
 
 \subsection{Main Comparative Results}
 
-Table~\ref{tab:main_results} summarizes the benchmark. The deterministic MILPs deliver the lowest nominal operating cost, with the storage-enabled deterministic schedule achieving the best nominal objective at 5584.7. However, both deterministic schedules perform poorly under uncertainty, with an out-of-sample mean shortfall of 740.3~kWh. By contrast, the robust formulations sharply reduce this shortage to 66.5~kWh. Storage then recovers part of the cost premium: the robust-with-storage model lowers total cost from 6128.2 to 6002.1 relative to robust-no-storage while preserving the same shortage metric.
+Table~\ref{tab:main_results} summarizes the benchmark. The deterministic MILP with storage achieves the lowest nominal operating cost at 5584.7, but it is brittle under uncertainty, with an out-of-sample mean shortfall of 727.4~kWh and a correlated-stress mean shortfall of 651.1~kWh. By contrast, both robust formulations with storage sharply reduce shortage metrics. The ambient-aware robust formulation increases nominal cost to 6035.6, but lowers the out-of-sample mean shortfall to 61.7~kWh and the correlated-stress mean shortfall to 35.4~kWh.
+
+The comparison between the last two rows is especially informative because it isolates the value of ambient-aware robustness rather than storage alone. Relative to the load-and-price-robust scheduler with storage, the proposed ambient-aware version has a small nominal cost premium (6035.6 versus 6002.1), but it improves all weather-linked stress metrics that we track: mean out-of-sample shortage, correlated-stress shortage, worst-case shortage, and correlated realized energy cost. The gains are modest rather than dramatic, which is exactly why we report them as an ablation rather than overstate them as a new class of control policy.
 
 \begin{table}[H]
 \centering
@@ -26,13 +29,14 @@ Table~\ref{tab:main_results} summarizes the benchmark. The deterministic MILPs d
 \label{tab:main_results}
 \begin{tabular}{lrrrrr}
 \toprule
-Method & Total cost & Peak power & Avg. COP & OOS shortage & Energy cost \\
+Method & Total cost & Peak power & Avg. COP & OOS shortage & Corr. shortage \\
 \midrule
-Rule-based & 7230.2 & 422.1 & 2.655 & 355.7 & 7116.9 \\
-Deterministic no storage & 5706.4 & 320.4 & 3.296 & 737.4 & 5628.4 \\
-Deterministic with storage & 5584.7 & 341.9 & 3.279 & 740.3 & 5488.6 \\
-Robust no storage & 6128.2 & 335.9 & 3.290 & 66.5 & 5852.9 \\
-Robust with storage & 6002.1 & 343.8 & 3.277 & 66.5 & 5725.4 \\
+Rule-based & 7230.2 & 422.1 & 2.655 & 630.2 & 585.5 \\
+Deterministic no storage & 5706.4 & 320.4 & 3.296 & 727.4 & 651.1 \\
+Deterministic with storage & 5584.7 & 341.9 & 3.279 & 727.4 & 651.1 \\
+Robust no storage & 6128.2 & 335.9 & 3.290 & 61.7 & 35.4 \\
+Robust with storage & 6002.1 & 343.2 & 3.277 & 62.3 & 36.8 \\
+Ambient-aware robust with storage & 6035.6 & 345.7 & 3.258 & 61.7 & 35.4 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -46,7 +50,7 @@ Figure~\ref{fig:dispatch} shows the 24-hour dispatch comparison. The rule-based 
     \label{fig:dispatch}
 \end{figure}
 
-Figure~\ref{fig:tradeoff} makes the key tradeoff explicit. Moving from the deterministic MILP to the robust MILP requires a modest increase in total cost, but it substantially improves out-of-sample cooling adequacy. This behavior is desirable for operators that face penalties or service risks from under-delivered cooling.
+Figure~\ref{fig:tradeoff} makes the cost-resilience tradeoff explicit. Moving from deterministic MILP to robust MILP requires a moderate increase in total cost, but it substantially improves cooling adequacy under uncertainty. The ambient-aware robust point remains close to the load-and-price-robust point in nominal cost, while shifting slightly toward lower shortage under correlated weather stress.
 
 \begin{figure}[H]
     \centering
@@ -55,7 +59,7 @@ Figure~\ref{fig:tradeoff} makes the key tradeoff explicit. Moving from the deter
     \label{fig:tradeoff}
 \end{figure}
 
-\subsection{Storage and Auxiliary-Equipment Interpretation}
+\subsection{Storage and Ambient-Robust Interpretation}
 
 The robust-with-storage solution does not minimize peak grid power in this benchmark, because it opportunistically charges during lower-price hours to protect future adequacy. This is visible in Figure~\ref{fig:grid_soc}, where state-of-charge trajectories differ markedly across methods. The value of storage here is therefore not merely peak shaving; it also acts as a flexibility buffer that lowers total cost under robust planning constraints.
 
@@ -66,7 +70,7 @@ The robust-with-storage solution does not minimize peak grid power in this bench
     \label{fig:grid_soc}
 \end{figure}
 
-The cost decomposition in Figure~\ref{fig:cost_breakdown} further clarifies the mechanism. Relative to the rule-based baseline, optimization reduces nominal energy cost substantially. Relative to deterministic scheduling, robust scheduling introduces a tariff-risk premium and more conservative dispatch decisions, but these are partially offset by storage-enabled temporal shifting. The robustness benefit is not limited to the mean: the deterministic schedules have a 95th-percentile shortfall of approximately 802.2~kWh, whereas the robust schedules reduce that value to 98.2~kWh. Under the correlated-stress evaluation, the mean shortage drops from 528.0~kWh for deterministic-with-storage to 23.0~kWh for robust-with-storage.
+The cost decomposition in Figure~\ref{fig:cost_breakdown} further clarifies the mechanism. Relative to the rule-based baseline, optimization reduces nominal energy cost substantially. Relative to deterministic scheduling, robust scheduling introduces a tariff-risk premium and more conservative dispatch decisions, but these are partially offset by storage-enabled temporal shifting. The ambient-aware robust variant adds another layer of conservatism by internalizing hot-wet weather penalties in both chiller efficiency and available capacity. In return, its correlated out-of-sample realized energy cost drops from 6052.6 to 6049.6 relative to the nominal-ambient robust schedule, and its correlated-stress mean shortfall drops from 36.8 to 35.4~kWh.
 
 \begin{figure}[H]
     \centering
@@ -77,7 +81,7 @@ The cost decomposition in Figure~\ref{fig:cost_breakdown} further clarifies the 
 
 \subsection{Ablation Studies}
 
-We next examine how the robustness budget $\GammaL$ affects performance. As shown in Figure~\ref{fig:gamma}, increasing $\GammaL$ from 0.0 to 2.2 raises total cost from 5584.7 to 6092.8, but it drives the out-of-sample mean shortage down from 737.4~kWh to 2.8~kWh. This monotonic trend indicates that the uncertainty-budget parameter is interpretable and operationally tunable.
+We next examine how the load uncertainty budget $\GammaL$ affects performance. As shown in Figure~\ref{fig:gamma}, increasing $\GammaL$ from 0.0 to 2.2 raises total cost from 5584.7 to 6092.8, but drives the out-of-sample mean shortage down from 727.4~kWh to 3.5~kWh. This monotonic trend indicates that the uncertainty-budget parameter is interpretable and operationally tunable.
 
 \begin{figure}[H]
     \centering
@@ -86,7 +90,7 @@ We next examine how the robustness budget $\GammaL$ affects performance. As show
     \label{fig:gamma}
 \end{figure}
 
-Storage sizing yields a different pattern. Increasing storage capacity from 450~kWh to 1400~kWh reduces total cost from 6062.0 to 5955.2, while slightly lowering the equivalent cycling ratio. This suggests that larger storage improves dispatch flexibility before cycling saturation becomes a dominant constraint.
+Storage sizing yields a different pattern. Increasing storage capacity from 450~kWh to 1400~kWh reduces total cost from 6062.0 to 5955.2 while keeping shortage metrics near the robust baseline. This suggests that larger storage improves dispatch flexibility before cycling saturation becomes dominant.
 
 \begin{figure}[H]
     \centering
@@ -95,10 +99,10 @@ Storage sizing yields a different pattern. Increasing storage capacity from 450~
     \label{fig:storage}
 \end{figure}
 
-Two additional ablations are also informative. First, forcing identical chiller efficiency assumptions degrades average COP and increases total cost, indicating that equipment heterogeneity is not a cosmetic modeling detail. Second, removing pump and tower power terms makes the plant appear artificially efficient. This confirms that a meaningful plant-level scheduling benchmark should include auxiliary electricity use even in a simplified MILP. For completeness, the optimization runs quickly in this benchmark: solve times are around 0.09--0.13~s on the current machine, consistent with the model being intended for planning-oriented use.
+Two additional ablations are especially relevant for the paper's methodological claims. First, forcing identical chiller efficiency assumptions degrades average COP and increases total cost, indicating that equipment heterogeneity is not a cosmetic modeling detail. Second, removing pump and tower power terms makes the plant appear artificially efficient, confirming that meaningful plant-level scheduling benchmarks should include auxiliary electricity use even in simplified MILPs. Finally, the dedicated weather-robustness ablation shows that adding ambient-aware derating and efficiency protection produces a modest but consistent improvement under correlated weather-linked stress. Solve times remain short throughout: around 0.09--0.15~s on the current machine.
 
 \subsection{Discussion}
 
-The results support three conclusions. First, deterministic plant scheduling can be misleadingly optimistic when the control objective includes reliable cooling adequacy under uncertainty. Second, storage has planning value beyond straightforward arbitrage because it gives the robust scheduler another degree of freedom for adequacy preservation. Third, a compact robust MILP can already produce interpretable tradeoffs and broad ablations in a fully reproducible workflow, even before field-calibrated dynamics are introduced.
+The results support four main conclusions. First, deterministic plant scheduling can be misleadingly optimistic when the objective includes reliable cooling adequacy under uncertainty. Second, storage has planning value beyond straightforward tariff arbitrage because it gives the robust scheduler another degree of freedom for adequacy preservation. Third, auxiliary-equipment modeling and heterogeneous chiller representation materially affect dispatch quality. Fourth, weather-aware performance degradation is worth modeling explicitly if the benchmark is intended to say something about realistic plant robustness rather than only nominal energy-cost minimization.
 
-At the same time, this study is intentionally limited. The benchmark is semi-synthetic rather than calibrated to field data, the uncertainty set is interval-based rather than distributionally robust, and the model uses affine auxiliary-equipment surrogates instead of detailed hydraulics. The comparison set also does not yet include a scenario-based stochastic scheduler, so the current evidence should be interpreted as a benchmark study rather than a definitive ranking across all uncertainty-aware methods.
+At the same time, this study remains intentionally limited. The benchmark is semi-synthetic rather than calibrated to field data, the uncertainty set is interval-based rather than distributionally robust, and the ambient-aware extension uses compact conservative surrogates instead of detailed thermodynamic heat-rejection models. The comparison set also does not yet include a scenario-based stochastic scheduler or a rolling-horizon MPC implementation. The current evidence should therefore be read as a reproducible benchmark contribution, not as a definitive ranking across all possible uncertainty-aware cooling controllers.

@@ -80,5 +80,17 @@ def solve_case(
     results = solver.solve(model, tee=False)
     bundle = _extract_results(model, case, method=method, solver_name=solver_name, results=results)
     bundle.kpis["solve_time_sec"] = time.perf_counter() - tic
-    bundle.metadata["solver_name"] = solver_name
+    bundle.metadata.update(
+        {
+            "solver_name": solver_name,
+            "robust_load": options.robust_load,
+            "robust_price": options.robust_price,
+            "robust_wetbulb": options.robust_wetbulb,
+            "storage_enabled": options.storage_enabled,
+            "pump_tower_enabled": options.pump_tower_enabled,
+            "identical_chillers": options.identical_chillers,
+            "load_gamma": (scenario or case.scenario).budget.load_gamma,
+            "price_gamma": (scenario or case.scenario).budget.price_gamma,
+        }
+    )
     return bundle

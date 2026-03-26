@@ -100,7 +100,7 @@ def render_benchmark_gallery(output_dir: str | Path = "outputs/benchmark") -> No
     fig.savefig(folder / "benchmark_grid_soc_comparison.png", dpi=180)
     plt.close(fig)
 
-    metrics = ["total_cost", "peak_grid_power_kw", "avg_cop", "oos_mean_shortage_kwh"]
+    metrics = ["total_cost", "peak_grid_power_kw", "avg_cop", "oos_mean_shortage_kwh", "corr_oos_mean_energy_cost"]
     heat = summary[metrics].copy()
     heat["avg_cop"] = heat["avg_cop"].max() - heat["avg_cop"]
     heat_norm = (heat - heat.min()) / (heat.max() - heat.min() + 1e-9)
@@ -180,6 +180,19 @@ def render_ablation_gallery(output_dir: str | Path = "outputs/ablations") -> Non
         axes[1].tick_params(axis="x", rotation=15)
         fig.tight_layout()
         fig.savefig(folder / "ablation_architecture_comparison.png", dpi=180)
+        plt.close(fig)
+
+    weather_df = summary.dropna(subset=["weather_robust"]).sort_values("weather_robust")
+    if not weather_df.empty:
+        fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
+        axes[0].bar(weather_df["method"], weather_df["corr_oos_mean_energy_cost"], color=["tab:gray", "tab:blue"])
+        axes[0].set_title("Weather Robustness: Correlated OOS Cost")
+        axes[0].tick_params(axis="x", rotation=15)
+        axes[1].bar(weather_df["method"], weather_df["corr_oos_mean_shortage_kwh"], color=["tab:gray", "tab:blue"])
+        axes[1].set_title("Weather Robustness: Correlated OOS Shortage")
+        axes[1].tick_params(axis="x", rotation=15)
+        fig.tight_layout()
+        fig.savefig(folder / "ablation_weather_robustness.png", dpi=180)
         plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(8, 5))
